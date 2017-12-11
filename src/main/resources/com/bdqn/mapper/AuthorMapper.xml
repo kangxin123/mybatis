@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bdqn.mapper.AuthorMapper">
+	
+	<resultMap id="authorWithBlogsAndComments" type="com.bdqn.bean.Author">
+		<id column="author_id" property="authorId"></id>
+		<result column="author_name" property="authorName"></result>
+		<collection property="blogs" ofType="com.bdqn.bean.Blog">
+			<id column="blog_id" property="blogId"></id>
+			<result column="blog_title" property="blogTitle"></result>
+			<result column="blog_content" property="blogContent"></result>
+			<collection property="comments" ofType="com.bdqn.bean.Comment">
+				<id column="comment_id" property="commentId"></id>
+				<result column="comment_content" property="commentContent"></result>
+			</collection>
+		</collection>
+	</resultMap>
+	
+	<resultMap id="authorWithBlogsAndCommentsByStep" type="com.bdqn.bean.Author">
+		<id column="author_id" property="authorId"></id>
+		<result column="author_name" property="authorName"></result>
+		<collection property="blogs" 
+			select="com.bdqn.mapper.BlogMapper.selectByAuthorId" column="author_id">
+			
+		</collection>
+	</resultMap>
+  <select id="selectByAuthorId" resultMap="authorWithBlogsAndComments">
+  	SELECT a.`author_id`,a.`author_name`,
+	b.`blog_id`,b.`blog_title`,b.`blog_content`,
+	c.`comment_id`,c.`comment_content`
+	FROM author a
+	LEFT JOIN blog b ON a.`author_id` = b.`author_id`
+	LEFT JOIN COMMENT c ON b.`blog_id` = c.`blog_id` 
+ 	WHERE a.`author_id` = #{authorId} 
+  </select>
+  
+   <select id="selectByAuthorIdByStep" resultMap="authorWithBlogsAndCommentsByStep">
+  	SELECT a.`author_id`,a.`author_name` 
+	FROM author a WHERE a.author_id = #{authorId}
+  </select>
+
+</mapper>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bdqn.mapper.BlogMapper">
+	
+	<resultMap id="blogsWithComments" type="com.bdqn.bean.Blog">
+		<id column="blog_id" property="blogId"></id>
+		<result column="blog_title" property="blogTitle"></result>
+		<result column="blog_content" property="blogContent"></result>
+		<collection property="comments" select="com.bdqn.mapper.CommentMapper.selectByBlogId" column="blog_id">
+		</collection>
+	</resultMap>	
+
+	<select id="selectByAuthorId" resultMap="blogsWithComments">
+		select *
+		from blog 
+		where author_id = #{authorId}
+	</select>
+
+</mapper>

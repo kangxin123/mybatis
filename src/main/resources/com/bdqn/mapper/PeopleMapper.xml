@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bdqn.mapper.PeopleMapper">
+<!-- 	 要根据这个Peopleid，查出它对应的信息，信息要包括Card实体的信息 -->
+	<resultMap id="peopleWithCard" type="com.bdqn.bean.People">
+		<id column="people_id" property="peopleId"></id>
+		<result column="people_name" property="peopleName"></result>
+<!--	一会我们是写我们的集合属性的时候，这个时候它就没办法再写	-->
+		<result column="card_id" property="card.cardId"></result>
+		<result column="address" property="card.address"></result>
+	</resultMap>
+	
+	<resultMap id="peopleWithCard2" type="com.bdqn.bean.People">
+		<id column="people_id" property="peopleId"></id>
+		<result column="people_name" property="peopleName"></result>
+<!--		提供 了association  关联对象  官方推荐使用的方式    -->
+		<association javaType="com.bdqn.bean.Card" property="card">
+			<id column="card_id" property="cardId"></id>
+			<result column="address" property="address"></result>
+		</association>
+	</resultMap>
+	
+	<resultMap id="peopleWithCard3" type="com.bdqn.bean.People">
+		<id column="people_id" property="peopleId"></id>
+		<result column="people_name" property="peopleName"></result>
+<!--		提供 了association  关联对象  官方推荐使用的方式    -->
+<!--
+ 	属性说明：
+	select:写明是哪个命名空间里面的哪个方法（找mapper.xml里面的select标签的id）
+	property:你借助另外的一个mapper查询出来的结果要封装给谁
+	column：假如select里面的这个方法需要传递参数，你需要指明，将谁传过去。
+
+ -->
+
+		<association property="card" select="com.bdqn.mapper.CardMapper.selectByPeopleId" 
+			column="people_id">
+		</association>
+	</resultMap>
+	
+	<select id="selectByPeopleId" resultMap="peopleWithCard2">
+<!--		// 查出card的信息 一张表不行-->
+		 SELECT p.`people_id`,p.`people_name` ,
+			c.`card_id`,c.`address`
+		 FROM people p , card c
+		 WHERE p.`people_id` = c.`people_id`
+		 AND p.`people_id` = #{peopleId} 
+	</select>
+	
+	<select id="selectByPeopleId2" resultMap="peopleWithCard3">
+<!--		// 查出card的信息 一张表不行-->
+		select * from people where people_id = #{peopleId}
+	</select>
+
+</mapper>

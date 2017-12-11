@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bdqn.mapper.TeamMapper">
+	
+<!--	大部分都要使用resultMap-->
+	<resultMap id="teamWithPlayers" type="com.bdqn.bean.Team">
+		<id column="team_id" property="teamId"></id>
+		<result column="team_name" property="teamName"></result>
+		<result column="team_money" property="teamMoney"></result>
+<!--	 一堆球员，借助collection	-->
+		<collection property="players" ofType="com.bdqn.bean.Player" >
+			<id column="player_id" property="playerId" ></id>
+			<result column="player_name" property="playerName"></result>
+		</collection>
+	</resultMap>
+	
+	
+	<resultMap id="teamWithPlayers2" type="com.bdqn.bean.Team">
+		<id column="team_id" property="teamId"></id>
+		<result column="team_name" property="teamName"></result>
+		<result column="team_money" property="teamMoney"></result>
+<!--	 一堆球员，借助collection	-->
+		<collection select="com.bdqn.mapper.PlayerMapper.selectByTeamId"
+			 property="players" column="team_id">
+		</collection>
+	</resultMap>
+<!--
+	动态的标签
+	if
+	where 
+	set
+	choose when otherwise
+    trim(比较强大)
+
+
+	用于循环有一个foreach
+    
+	resultMap
+		mybatis强大的结果映射集。
+	resultMap
+	resultType
+		这两者只能写一个，不能共存。
+		对于简单的结果往往使用resultType可以搞定，但是实际业务往往很复杂，这个时候就需要我们自行去设计返回结果集。
+
+-->
+	
+	<resultMap id="baseMap" type="com.bdqn.bean.Team">
+		<id column="team_id" property="teamId"></id>
+		<result column="team_name" property="teamName"></result>
+		<result column="team_money" property="teamMoney"></result>
+	</resultMap>
+<!--  绝大部分还真是用resultMap 	-->
+	<select id="selectAll" resultMap="baseMap" >
+		select
+		<include refid="team_column"></include>
+		from team
+	</select>
+	
+	<insert id="insert">
+		insert into team
+	   (team_id
+		<if test="teamMoney != null">
+			,team_money
+		</if>
+		<if test="teamName != null">
+			,team_name
+		</if>
+		) 
+		values (#{teamId}
+			<if test="teamMoney != null">
+			,#{teamMoney}
+			</if>
+			<if test="teamName != null">
+				,#{teamName}
+			</if>
+		)
+<!--		动态SQL-->
+	</insert>
+<!--
+	foreach 这个标签用于循环迭代
+	collection：集合（mybatis已经帮我们注册好了，虽然没有显示去写，但是mybatis的核心配置文件里面有大量的settings
+		默认的设置好多不需要去修改就有这个效果了。
+	open：你整个这一块表达式以什么开头
+	close：以什么结尾
+	separator，彼此之间使用什么分隔
+	item:这个是这个集合迭代的一个表达式，用它可以取出传递进来的值。
+
+
+	）
+	
+	#{id}：什么表达式？  OGNL表达式，阿帕奇研究的，Object Graphy Navigator Language
+		对象的语法导航语言。
+	    凡是对象的属性都可以在我们这种表达式里面直接通过点的方式获取
+	  team.teamName
+	加入team有一个集合
+ 	还有一个是index：表明下标。
+
+	-->
+	<select id="selectByIds" resultType="com.bdqn.bean.Team">
+		select team_id teamId,team_name teamName,team_money teamMoney
+		from team where team_id in  
+		<foreach collection="list" open="(" close=")" item="id" separator=",">
+			#{id}
+		</foreach>
+	</select>
+	
+	<select id="selecTive" resultType="com.bdqn.bean.Team">
+		select 
+			team_id teamId,team_name teamName,team_money teamMoney
+		from team
+<!-- 
+	where 标签会自动去除前面多余的and，如果将and放在后面？会是什么情况	
+	正常来讲还是写前面习惯点，虽然我们一会可以用trim标签比较好的解决，但是它表达这个含义
+	没有where来的直接
+	or 也是同理。
+-->
+		<where>
+			<if test="teamId != null ">
+				or team_id = #{teamId} 
+			</if>
+ 
+			<if test="teamName != null and teamName !=''">
+				or team_name like #{teamName} 
+			</if>
+			<if test="teamMoney != null ">
+				or team_money = #{teamMoney} 
+			</if>
+		</where>
+
+<!--			使用where标签来解决-->
+	
+<!--			1 = 1-->
+	
+<!--				希望能模糊查询？
+	有三种解决方案：
+	一：使用${} 这种写法，有个问题，虽然可以去拼接字符串，但是同时也会有可能有SQL注入，并不安全
+	二：使用bind标签，进行变量绑定。
+	三：直接在外面写。
+
+			-->
+	</select>
+	
+	<select id="selecTiveOne" resultType="com.bdqn.bean.Team">
+		select *
+		from team
+		<where>
+			<choose>
+<!--				java里面switch差不多，只会选一个，if只要满足就要补充。-->
+				<when test="teamId != null">
+					team_id = #{teamId}
+				</when>
+				<when test="teamName != null and teamName != ''">
+					team_name= #{teamName}
+				</when>
+				<when test="teamMoney != null">
+					team_money= #{teamMoney}
+				</when>
+			 	<otherwise>
+			 		1 = 1 
+			 	</otherwise>
+			</choose>
+		</where>
+	</select>
+	
+	<update id="update" >
+		update team
+		<set>
+			<if test="teamName != null">
+				team_name = #{teamName},
+			</if>
+			<if test="teamMoney != null">
+				team_money = #{teamMoney},
+			</if>
+		</set>
+		<where>
+			<if test="teamId != null">
+				team_id = #{teamId}
+			</if>
+		</where>
+	</update>
+	
+<!--  trim 标签	本义用来去除字符串的，但是呢，设计得不好，
+       表达含义不明确。
+	where set 
+ 	if when otherwise(统统都有实际的含义)
+
+-->
+	
+	<update id="update2" >
+		update team
+		<trim prefix="set" prefixOverrides="," >
+			<if test="teamName != null">
+				team_name = #{teamName} 
+			</if>
+			<if test="teamMoney != null">
+				team_money = #{teamMoney}
+			</if>
+			<where>
+				<if test="teamId != null">
+				team_id = #{teamId}
+				</if>
+			</where>
+		</trim>
+	</update>
+	<sql id="team_column">
+		team_id teamId,team_name teamName,team_money teamMoney
+	</sql>
+	
+	<select id="selectByPrimaryKey" resultMap="teamWithPlayers">
+		 SELECT 
+				t.`team_id`,t.`team_name`,t.`team_money`,p.`player_id`,p.`player_name`
+		 FROM team t , player p
+		 WHERE p.`team_id` = t.`team_id`
+		 AND t.`team_id` = #{teamId}
+	</select>
+	
+	<select id="selectByPrimaryKey2" resultMap="teamWithPlayers2">
+		 SELECT *
+		 FROM team
+		 where team_id = #{teamId}
+	</select>
+</mapper>
+
+
+
+
+
+
+
+ 
